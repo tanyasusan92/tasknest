@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>TaskNest — Plan tasks, track deadlines, stay ahead.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Reset & Base ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overscroll-behavior: none; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f4f6fb;
+    color: #1a1d29;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; }
+  input, textarea, select { font-family: inherit; font-size: 16px; }
+
+  :root {
+    --primary: #2972ff;
+    --primary-dark: #1f5cd1;
+    --primary-light: #e8f0ff;
+    --high: #e63946;
+    --medium: #f4a261;
+    --low: #6b7280;
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --text: #1a1d29;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --success: #16a34a;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.10);
+  }
+
+  /* ---------- App Shell (Phone-style on desktop, full on mobile) ---------- */
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--card);
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,0,0,0.08);
+    overflow-x: hidden;
+  }
+
+  .screen {
+    display: none;
+    min-height: 100vh;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Onboarding ---------- */
+  .onboarding {
+    padding: 60px 32px 32px;
+    text-align: center;
+    background: linear-gradient(180deg, #fff 0%, #f4f6fb 100%);
+  }
+  .onboarding-illustration {
+    margin: 40px auto;
+    width: 180px;
+    height: 180px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .onboarding-blob {
+    position: absolute;
+    background: var(--primary);
+    opacity: 0.15;
+    border-radius: 50%;
+  }
+  .blob-1 { width: 70px; height: 70px; top: 20px; left: 10px; }
+  .blob-2 { width: 50px; height: 50px; bottom: 30px; right: 20px; opacity: 0.25; }
+  .blob-3 { width: 30px; height: 30px; top: 50%; right: 0; opacity: 0.3; }
+  .onboarding-icon {
+    width: 110px; height: 110px;
+    background: white;
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-lg);
+    font-size: 56px;
+    z-index: 2;
+    position: relative;
+  }
+  .onboarding-emoji {
+    position: absolute;
+    font-size: 28px;
+    z-index: 3;
+  }
+  .emoji-tl { top: -8px; left: -10px; }
+  .emoji-tr { top: -10px; right: -8px; }
+  .emoji-bl { bottom: 0; left: 0; }
+  .onboarding-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 32px 0 16px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .onboarding-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 32px 0;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #d1d5db;
+    transition: all 0.3s ease;
+  }
+  .dot.active { background: var(--primary); width: 24px; border-radius: 4px; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled {
+    background: #c1c8d4;
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  /* ---------- Auth Screens ---------- */
+  .auth {
+    padding: 32px;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  .auth-close {
+    align-self: flex-end;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #f0f1f5;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 24px;
+  }
+  .auth-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .auth-subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .auth-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: white;
+    margin-bottom: 12px;
+    transition: border 0.2s ease;
+    outline: none;
+  }
+  .auth-input:focus { border-color: var(--primary); }
+  .auth-link-row {
+    text-align: right;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .auth-link-row a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .auth-error {
+    color: var(--high);
+    font-size: 13px;
+    margin-bottom: 16px;
+    min-height: 20px;
+  }
+
+  /* ---------- Dashboard ---------- */
+  .dash-header {
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .dash-title {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .dash-icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stat-row {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .stat-row::-webkit-scrollbar { display: none; }
+  .stat-card {
+    flex: 0 0 auto;
+    min-width: 110px;
+    height: 92px;
+    border-radius: 14px;
+    padding: 14px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .stat-card:active { transform: scale(0.97); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+  }
+  .stat-card.total { background: linear-gradient(135deg, #4a5568, #2d3748); }
+  .stat-card.pending { background: linear-gradient(135deg, #ed8936, #c05621); }
+  .stat-card.progress { background: linear-gradient(135deg, #4299e1, #2b6cb0); }
+  .stat-card.overdue { background: linear-gradient(135deg, #f56565, #c53030); }
+  .stat-card.completed { background: linear-gradient(135deg, #48bb78, #2f855a); }
+  .stat-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+  }
+  .stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.95;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  /* ---------- Filter chips ---------- */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 24px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: #f0f1f5;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .chip.active {
+    background: var(--primary);
+    color: white;
+  }
+  .upcoming-text {
+    padding: 12px 24px 4px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* ---------- Task list ---------- */
+  .task-list {
+    flex: 1;
+    padding: 8px 0 100px;
+  }
+  .date-divider {
+    padding: 16px 24px 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    background: #f9fafc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .task-card {
+    display: flex;
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f1f5;
+    gap: 14px;
+    align-items: flex-start;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .task-card:hover { background: #f9fafc; }
+  .task-time {
+    flex: 0 0 56px;
+    text-align: left;
+  }
+  .task-time-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .task-status-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .task-content { flex: 1; min-width: 0; }
+  .task-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+    word-wrap: break-word;
+  }
+  .task-course {
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .task-priority {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .task-priority.high { color: var(--high); }
+  .task-priority.medium { color: var(--medium); }
+  .task-priority.low { color: var(--low); }
+  .task-overdue-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #fee2e2;
+    color: var(--high);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+  .task-due-soon-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #fef3c7;
+    color: #c05621;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+  .task-checkbox {
+    flex: 0 0 24px;
+    width: 24px; height: 24px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    margin-top: 2px;
+  }
+  .task-checkbox:hover { border-color: var(--primary); }
+  .task-checkbox.checked {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+  }
+  .task-card.completed .task-title,
+  .task-card.completed .task-course {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty-state {
+    text-align: center;
+    padding: 60px 32px;
+    color: var(--muted);
+  }
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  .empty-state-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .empty-state-text {
+    font-size: 14px;
+  }
+
+  /* ---------- Floating Action Button ---------- */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: max(24px, calc(50vw - 240px + 24px));
+    z-index: 50;
+    background: var(--primary);
+    color: white;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(41, 114, 255, 0.35);
+    transition: transform 0.2s ease;
+    padding: 0;
+    gap: 0;
+  }
+  .fab:hover { transform: scale(1.05); }
+  .fab span:first-child {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .fab-label {
+    display: none;
+  }
+  @media (min-width: 480px) {
+    .fab { right: calc(50vw - 240px + 24px); }
+  }
+  @media (max-width: 479px) {
+    .fab { right: 20px; }
+  }
+
+  /* ---------- Modal Sheet ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .modal-date {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    flex: 1;
+    text-align: center;
+  }
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #f0f1f5;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-left: 4px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: white;
+    transition: border 0.2s ease;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--primary); }
+  textarea.form-input {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .delete-btn {
+    color: var(--high);
+    background: #fee2e2;
+  }
+
+  /* ---------- Date picker ---------- */
+  .date-picker-modal { padding: 16px; }
+  .date-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 16px;
+  }
+  .date-picker-nav {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #f0f1f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+  }
+  .date-picker-month {
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .date-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .date-picker-dow {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    padding: 8px 0;
+  }
+  .date-picker-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .date-picker-day:hover { background: var(--primary-light); }
+  .date-picker-day.other-month { color: #d1d5db; }
+  .date-picker-day.today {
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .date-picker-day.selected {
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--text);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 200;
+    transition: transform 0.3s ease;
+    max-width: 90%;
+    box-shadow: var(--shadow-lg);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ---------- Auxiliary ---------- */
+  .hidden { display: none !important; }
+  .text-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .header-back {
+    background: none;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 15px;
+    padding: 8px 0;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ ONBOARDING SCREEN ============ -->
+  <div class="screen onboarding active" id="screen-onboarding">
+    <div class="onboarding-illustration">
+      <div class="onboarding-blob blob-1"></div>
+      <div class="onboarding-blob blob-2"></div>
+      <div class="onboarding-blob blob-3"></div>
+      <div class="onboarding-icon" id="onboarding-icon">🎓</div>
+      <div class="onboarding-emoji emoji-tl" id="emoji-tl">✌️</div>
+      <div class="onboarding-emoji emoji-tr" id="emoji-tr">👏</div>
+    </div>
+    <h1 class="onboarding-title" id="onboarding-title">Plan tasks, track deadlines, stay ahead.</h1>
+    <div class="onboarding-dots">
+      <div class="dot active" data-dot="0"></div>
+      <div class="dot" data-dot="1"></div>
+      <div class="dot" data-dot="2"></div>
+    </div>
+    <div style="flex: 1; min-height: 40px;"></div>
+    <button class="btn btn-primary" id="onboarding-next">Get Started</button>
+    <button class="btn btn-ghost" id="onboarding-skip" style="margin-top: 8px;">Skip</button>
+  </div>
+
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div class="screen auth" id="screen-login">
+    <button class="auth-close" id="login-close" title="Back">×</button>
+    <h1 class="auth-title">Welcome Back</h1>
+    <p class="auth-subtitle">Sign in to manage your tasks and deadlines</p>
+    <input type="email" class="auth-input" id="login-email" placeholder="Email" autocomplete="email" />
+    <div class="auth-link-row">
+      Don't have an account? <a class="text-link" id="goto-signup">Sign Up</a>
+    </div>
+    <input type="password" class="auth-input" id="login-password" placeholder="Password" autocomplete="current-password" />
+    <div class="auth-error" id="login-error"></div>
+    <button class="btn btn-primary" id="login-submit">Login</button>
+  </div>
+
+  <!-- ============ SIGNUP SCREEN ============ -->
+  <div class="screen auth" id="screen-signup">
+    <button class="auth-close" id="signup-close" title="Back">×</button>
+    <h1 class="auth-title">Create Account</h1>
+    <p class="auth-subtitle">Start organizing your coursework today</p>
+    <input type="text" class="auth-input" id="signup-name" placeholder="Full name" autocomplete="name" />
+    <input type="email" class="auth-input" id="signup-email" placeholder="Email" autocomplete="email" />
+    <input type="password" class="auth-input" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" />
+    <div class="auth-error" id="signup-error"></div>
+    <button class="btn btn-primary" id="signup-submit">Sign Up</button>
+    <div class="auth-link-row" style="text-align: center; margin-top: 16px;">
+      Already have an account? <a class="text-link" id="goto-login">Log In</a>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD SCREEN ============ -->
+  <div class="screen" id="screen-dashboard">
+    <div class="dash-header">
+      <div>
+        <div style="font-size: 12px; color: var(--muted);">Welcome back,</div>
+        <div class="dash-title" id="user-name">Student</div>
+      </div>
+      <button class="dash-icon-btn" id="logout-btn" title="Log out">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="stat-row" id="stat-row">
+      <!-- stat cards rendered by JS -->
+    </div>
+
+    <div class="filter-row" id="filter-row">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="pending">Pending</button>
+      <button class="chip" data-filter="in_progress">In Progress</button>
+      <button class="chip" data-filter="completed">Completed</button>
+      <button class="chip" data-filter="overdue">Overdue</button>
+    </div>
+
+    <div class="upcoming-text" id="upcoming-text">Loading…</div>
+
+    <div class="task-list" id="task-list">
+      <!-- tasks rendered by JS -->
+    </div>
+
+    <button class="fab" id="fab-add" title="Add task">
+      <span>+</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- ============ ADD/EDIT TASK MODAL ============ -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-date" id="modal-date">—</span>
+      <span class="modal-title">Add Task</span>
+      <button class="modal-close" id="task-modal-close">×</button>
+    </div>
+    <form id="task-form" autocomplete="off">
+      <div class="form-group">
+        <label class="form-label" for="task-title">Title *</label>
+        <input type="text" class="form-input" id="task-title" required maxlength="100" placeholder="e.g., UI Design Assignment" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-course">Course / Subject</label>
+        <input type="text" class="form-input" id="task-course" maxlength="50" placeholder="e.g., HCI" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="task-description">Description</label>
+        <textarea class="form-input" id="task-description" maxlength="500" placeholder="Optional notes…"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="task-due-date">Due Date *</label>
+          <input type="text" class="form-input" id="task-due-date" required readonly placeholder="Tap to pick" style="cursor: pointer;" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-due-time">Time</label>
+          <input type="time" class="form-input" id="task-due-time" value="09:00" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="task-priority">Priority</label>
+          <select class="form-input" id="task-priority">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-status">Status</label>
+          <select class="form-input" id="task-status">
+            <option value="pending" selected>Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn delete-btn hidden" id="task-delete-btn">Delete</button>
+        <button type="submit" class="btn btn-primary" id="task-save-btn">Save Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ DATE PICKER MODAL ============ -->
+<div class="modal-overlay" id="date-picker-modal">
+  <div class="modal date-picker-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <button class="header-back" id="date-back">Back</button>
+      <span class="modal-title">Pick a date</span>
+      <button class="modal-close" id="date-close">×</button>
+    </div>
+    <div class="date-picker-header">
+      <button class="date-picker-nav" id="date-prev">‹</button>
+      <span class="date-picker-month" id="date-month-label">—</span>
+      <button class="date-picker-nav" id="date-next">›</button>
+    </div>
+    <div class="date-picker-grid" id="date-grid">
+      <!-- generated -->
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================
+   TASKNEST APPLICATION LOGIC
+   - Mock auth (any email + password ≥ 6 chars)
+   - Browser localStorage for persistence
+   - Single-file SPA, no dependencies
+   ========================================= */
+
+// ---------- Storage Keys ----------
+const STORAGE = {
+  AUTH: 'tasknest_auth',
+  TASKS: 'tasknest_tasks',
+  USERS: 'tasknest_users',
+  ONBOARDED: 'tasknest_onboarded'
+};
+
+// ---------- App State ----------
+const state = {
+  user: null,
+  tasks: [],
+  filter: 'all',
+  editingTaskId: null,
+  onboardingStep: 0,
+  datePickerMonth: new Date(),
+  selectedDate: null,
+  isEditingDate: false
+};
+
+const ONBOARDING_SCREENS = [
+  { icon: '🎓', emojiTL: '✌️', emojiTR: '👏', title: 'Plan tasks, track deadlines, stay ahead.' },
+  { icon: '🏫', emojiTL: '🏆', emojiTR: '🔍', title: 'Track progress easily and keep important deadlines in sight.' },
+  { icon: '🔔', emojiTL: '🔥', emojiTR: '⏰', title: 'Manage your coursework clearly from one simple dashboard.' }
+];
+
+// ---------- Utilities ----------
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function uuid() {
+  return 'task_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+}
+
+function loadStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error('Storage error:', e);
+  }
+}
+
+function showScreen(id) {
+  $$('.screen').forEach(s => s.classList.remove('active'));
+  $('#screen-' + id).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatDateShort(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  return timeStr; // already HH:MM
+}
+
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function isOverdue(task) {
+  if (task.status === 'completed') return false;
+  const due = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
+  return due < new Date();
+}
+
+function isDueSoon(task) {
+  if (task.status === 'completed') return false;
+  const due = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
+  const now = new Date();
+  const diff = due - now;
+  return diff > 0 && diff <= 48 * 60 * 60 * 1000;
+}
+
+// ---------- Initialisation ----------
+function init() {
+  // Check if onboarding completed
+  const onboarded = loadStorage(STORAGE.ONBOARDED, false);
+  const auth = loadStorage(STORAGE.AUTH, null);
+
+  if (auth && auth.email) {
+    state.user = auth;
+    state.tasks = loadStorage(STORAGE.TASKS, []);
+    if (state.tasks.length === 0) {
+      seedTasks();
+    }
+    enterDashboard();
+  } else if (onboarded) {
+    showScreen('login');
+  } else {
+    showScreen('onboarding');
+  }
+
+  bindEvents();
+}
+
+function seedTasks() {
+  // Sample tasks so the dashboard isn't empty for first-time users
+  const today = new Date();
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const inThreeDays = new Date(today); inThreeDays.setDate(today.getDate() + 3);
+  const inWeek = new Date(today); inWeek.setDate(today.getDate() + 7);
+
+  const fmt = (d) => d.toISOString().split('T')[0];
+
+  state.tasks = [
+    { id: uuid(), title: 'UI Design Assignment', course: 'HCI', description: 'Submit final wireframes', due_date: fmt(today), due_time: '09:40', priority: 'High', status: 'pending', created: Date.now() },
+    { id: uuid(), title: 'Database Quiz Preparation', course: 'DBMS', description: 'Chapters 4-6', due_date: fmt(today), due_time: '11:35', priority: 'Medium', status: 'pending', created: Date.now() },
+    { id: uuid(), title: 'Marketing Presentation Slides', course: 'Marketing', description: '10 slides max', due_date: fmt(tomorrow), due_time: '08:00', priority: 'Low', status: 'in_progress', created: Date.now() },
+    { id: uuid(), title: 'Analyse Website Stats', course: 'Marketing', description: 'Year-end report', due_date: fmt(inThreeDays), due_time: '09:40', priority: 'Medium', status: 'pending', created: Date.now() },
+    { id: uuid(), title: 'Read Research Paper', course: 'PDRE', description: 'For next class discussion', due_date: fmt(inWeek), due_time: '14:00', priority: 'Low', status: 'pending', created: Date.now() }
+  ];
+  saveStorage(STORAGE.TASKS, state.tasks);
+}
+
+// ---------- Onboarding ----------
+function renderOnboarding() {
+  const s = ONBOARDING_SCREENS[state.onboardingStep];
+  $('#onboarding-icon').textContent = s.icon;
+  $('#emoji-tl').textContent = s.emojiTL;
+  $('#emoji-tr').textContent = s.emojiTR;
+  $('#onboarding-title').textContent = s.title;
+  $$('.dot').forEach((d, i) => d.classList.toggle('active', i === state.onboardingStep));
+  $('#onboarding-next').textContent = state.onboardingStep === ONBOARDING_SCREENS.length - 1 ? 'Get Started' : 'Next';
+}
+
+function nextOnboarding() {
+  if (state.onboardingStep < ONBOARDING_SCREENS.length - 1) {
+    state.onboardingStep++;
+    renderOnboarding();
+  } else {
+    completeOnboarding();
+  }
+}
+
+function completeOnboarding() {
+  saveStorage(STORAGE.ONBOARDED, true);
+  showScreen('login');
+}
+
+// ---------- Auth ----------
+function handleSignup() {
+  const name = $('#signup-name').value.trim();
+  const email = $('#signup-email').value.trim().toLowerCase();
+  const password = $('#signup-password').value;
+  const errEl = $('#signup-error');
+
+  if (!name) { errEl.textContent = 'Please enter your name.'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email.'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+  const users = loadStorage(STORAGE.USERS, {});
+  if (users[email]) { errEl.textContent = 'Account already exists. Please log in.'; return; }
+
+  // Mock: store user (NOT secure, demo only)
+  users[email] = { name, password };
+  saveStorage(STORAGE.USERS, users);
+
+  state.user = { email, name };
+  saveStorage(STORAGE.AUTH, state.user);
+  errEl.textContent = '';
+
+  if (state.tasks.length === 0) seedTasks();
+  enterDashboard();
+  showToast('Welcome, ' + name + '!');
+}
+
+function handleLogin() {
+  const email = $('#login-email').value.trim().toLowerCase();
+  const password = $('#login-password').value;
+  const errEl = $('#login-error');
+
+  if (!email || !password) { errEl.textContent = 'Enter email and password.'; return; }
+
+  const users = loadStorage(STORAGE.USERS, {});
+  // Mock auth: if user exists check password; if not, auto-create on demo
+  let userRecord = users[email];
+
+  if (!userRecord) {
+    // Demo convenience: any email/password (>=6 chars) creates an account
+    if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+    userRecord = { name: email.split('@')[0], password };
+    users[email] = userRecord;
+    saveStorage(STORAGE.USERS, users);
+  } else if (userRecord.password !== password) {
+    errEl.textContent = 'Incorrect password.';
+    return;
+  }
+
+  state.user = { email, name: userRecord.name };
+  saveStorage(STORAGE.AUTH, state.user);
+  errEl.textContent = '';
+
+  state.tasks = loadStorage(STORAGE.TASKS, []);
+  if (state.tasks.length === 0) seedTasks();
+  enterDashboard();
+  showToast('Welcome back, ' + userRecord.name + '!');
+}
+
+function handleLogout() {
+  if (!confirm('Log out of TaskNest?')) return;
+  localStorage.removeItem(STORAGE.AUTH);
+  state.user = null;
+  showScreen('login');
+  showToast('Logged out');
+}
+
+function enterDashboard() {
+  $('#user-name').textContent = state.user.name || 'Student';
+  showScreen('dashboard');
+  renderDashboard();
+}
+
+// ---------- Dashboard rendering ----------
+function getFilteredTasks() {
+  let list = [...state.tasks];
+  if (state.filter === 'overdue') {
+    list = list.filter(isOverdue);
+  } else if (state.filter !== 'all') {
+    list = list.filter(t => t.status === state.filter);
+  }
+  // Sort by due date asc, then time
+  list.sort((a, b) => {
+    const da = new Date(a.due_date + 'T' + (a.due_time || '00:00'));
+    const db = new Date(b.due_date + 'T' + (b.due_time || '00:00'));
+    return da - db;
+  });
+  return list;
+}
+
+function renderStats() {
+  const total = state.tasks.length;
+  const pending = state.tasks.filter(t => t.status === 'pending').length;
+  const progress = state.tasks.filter(t => t.status === 'in_progress').length;
+  const completed = state.tasks.filter(t => t.status === 'completed').length;
+  const overdue = state.tasks.filter(isOverdue).length;
+
+  const statRow = $('#stat-row');
+  statRow.innerHTML = `
+    <div class="stat-card total" data-jump="all">
+      <div class="stat-content">
+        <div class="stat-label">Total tasks</div>
+        <div class="stat-value">${total}</div>
+      </div>
+    </div>
+    <div class="stat-card pending" data-jump="pending">
+      <div class="stat-content">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value">${pending}</div>
+      </div>
+    </div>
+    <div class="stat-card progress" data-jump="in_progress">
+      <div class="stat-content">
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value">${progress}</div>
+      </div>
+    </div>
+    <div class="stat-card overdue" data-jump="overdue">
+      <div class="stat-content">
+        <div class="stat-label">Overdue</div>
+        <div class="stat-value">${overdue}</div>
+      </div>
+    </div>
+    <div class="stat-card completed" data-jump="completed">
+      <div class="stat-content">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value">${completed}</div>
+      </div>
+    </div>
+  `;
+  // Wire stat clicks to filter
+  statRow.querySelectorAll('.stat-card').forEach(c => {
+    c.addEventListener('click', () => {
+      state.filter = c.dataset.jump;
+      $$('.chip').forEach(ch => ch.classList.toggle('active', ch.dataset.filter === state.filter));
+      renderTasks();
+    });
+  });
+}
+
+function renderTasks() {
+  const list = getFilteredTasks();
+  const upcoming = list.filter(t => t.status !== 'completed' && !isOverdue(t)
+    && (new Date(t.due_date) - startOfDay(new Date())) <= 7 * 24 * 60 * 60 * 1000).length;
+
+  $('#upcoming-text').textContent = list.length === 0
+    ? ''
+    : (state.filter === 'all'
+        ? `${upcoming} upcoming task${upcoming === 1 ? '' : 's'} this week`
+        : `${list.length} ${state.filter.replace('_', ' ')} task${list.length === 1 ? '' : 's'}`);
+
+  const taskList = $('#task-list');
+
+  if (list.length === 0) {
+    taskList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-title">No tasks yet</div>
+        <div class="empty-state-text">Tap the + button to add your first task.</div>
+      </div>`;
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  list.forEach(t => {
+    if (!groups[t.due_date]) groups[t.due_date] = [];
+    groups[t.due_date].push(t);
+  });
+
+  let html = '';
+  Object.keys(groups).sort().forEach(date => {
+    html += `<div class="date-divider">${formatDate(date)}</div>`;
+    groups[date].forEach(t => {
+      const overdue = isOverdue(t);
+      const dueSoon = isDueSoon(t);
+      const statusLabel = t.status === 'in_progress' ? 'In Progress' : t.status.charAt(0).toUpperCase() + t.status.slice(1);
+      html += `
+        <div class="task-card ${t.status === 'completed' ? 'completed' : ''}" data-task-id="${t.id}">
+          <div class="task-time">
+            <div class="task-time-value">${t.due_time || '—'}</div>
+            <div class="task-status-label">${statusLabel}</div>
+          </div>
+          <div class="task-content">
+            <div class="task-title">
+              ${escapeHTML(t.title)}
+              ${overdue ? '<span class="task-overdue-badge">OVERDUE</span>' : ''}
+              ${dueSoon && !overdue ? '<span class="task-due-soon-badge">DUE SOON</span>' : ''}
+            </div>
+            ${t.course ? `<div class="task-course">${escapeHTML(t.course)}</div>` : ''}
+            <div class="task-priority ${t.priority.toLowerCase()}">${t.priority} Priority</div>
+          </div>
+          <div class="task-checkbox ${t.status === 'completed' ? 'checked' : ''}" data-toggle-id="${t.id}" title="Toggle complete">
+            ${t.status === 'completed' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+          </div>
+        </div>`;
+    });
+  });
+
+  taskList.innerHTML = html;
+
+  // Attach click handlers
+  taskList.querySelectorAll('.task-card').forEach(c => {
+    c.addEventListener('click', (e) => {
+      if (e.target.closest('.task-checkbox')) return;
+      openTaskModal(c.dataset.taskId);
+    });
+  });
+  taskList.querySelectorAll('.task-checkbox').forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTaskComplete(cb.dataset.toggleId);
+    });
+  });
+}
+
+function renderDashboard() {
+  renderStats();
+  renderTasks();
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+// ---------- Task CRUD ----------
+function toggleTaskComplete(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.status = t.status === 'completed' ? 'pending' : 'completed';
+  saveStorage(STORAGE.TASKS, state.tasks);
+  renderDashboard();
+  showToast(t.status === 'completed' ? '✓ Marked complete' : 'Reopened task');
+}
+
+function openTaskModal(id) {
+  state.editingTaskId = id || null;
+  const modalTitle = $('.modal-title');
+  const deleteBtn = $('#task-delete-btn');
+  const dateLabel = $('#modal-date');
+
+  if (id) {
+    const t = state.tasks.find(x => x.id === id);
+    if (!t) return;
+    modalTitle.textContent = 'Edit Task';
+    deleteBtn.classList.remove('hidden');
+    $('#task-title').value = t.title;
+    $('#task-course').value = t.course || '';
+    $('#task-description').value = t.description || '';
+    $('#task-due-date').value = formatDate(t.due_date);
+    $('#task-due-date').dataset.iso = t.due_date;
+    $('#task-due-time').value = t.due_time || '09:00';
+    $('#task-priority').value = t.priority;
+    $('#task-status').value = t.status;
+    dateLabel.textContent = formatDateShort(t.due_date);
+  } else {
+    modalTitle.textContent = 'Add Task';
+    deleteBtn.classList.add('hidden');
+    $('#task-form').reset();
+    $('#task-due-time').value = '09:00';
+    $('#task-priority').value = 'Medium';
+    $('#task-status').value = 'pending';
+    const today = new Date().toISOString().split('T')[0];
+    $('#task-due-date').value = formatDate(today);
+    $('#task-due-date').dataset.iso = today;
+    dateLabel.textContent = formatDateShort(today);
+  }
+  $('#task-modal').classList.add('active');
+}
+
+function closeTaskModal() {
+  $('#task-modal').classList.remove('active');
+  state.editingTaskId = null;
+}
+
+function saveTask(e) {
+  e.preventDefault();
+  const title = $('#task-title').value.trim();
+  const isoDate = $('#task-due-date').dataset.iso;
+
+  if (!title) { showToast('Title is required'); return; }
+  if (!isoDate) { showToast('Due date is required'); return; }
+
+  const data = {
+    title,
+    course: $('#task-course').value.trim(),
+    description: $('#task-description').value.trim(),
+    due_date: isoDate,
+    due_time: $('#task-due-time').value || '09:00',
+    priority: $('#task-priority').value,
+    status: $('#task-status').value
+  };
+
+  if (state.editingTaskId) {
+    const idx = state.tasks.findIndex(x => x.id === state.editingTaskId);
+    if (idx >= 0) {
+      state.tasks[idx] = { ...state.tasks[idx], ...data };
+    }
+    showToast('Task updated');
+  } else {
+    state.tasks.push({ id: uuid(), ...data, created: Date.now() });
+    showToast('Task added');
+  }
+
+  saveStorage(STORAGE.TASKS, state.tasks);
+  closeTaskModal();
+  renderDashboard();
+}
+
+function deleteTask() {
+  if (!state.editingTaskId) return;
+  if (!confirm('Delete this task? This cannot be undone.')) return;
+  state.tasks = state.tasks.filter(t => t.id !== state.editingTaskId);
+  saveStorage(STORAGE.TASKS, state.tasks);
+  closeTaskModal();
+  renderDashboard();
+  showToast('Task deleted');
+}
+
+// ---------- Date Picker ----------
+function openDatePicker() {
+  state.datePickerMonth = new Date($('#task-due-date').dataset.iso || new Date());
+  state.selectedDate = $('#task-due-date').dataset.iso;
+  renderDatePicker();
+  $('#date-picker-modal').classList.add('active');
+}
+
+function closeDatePicker() {
+  $('#date-picker-modal').classList.remove('active');
+}
+
+function renderDatePicker() {
+  const m = state.datePickerMonth;
+  const monthLabel = m.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  $('#date-month-label').textContent = monthLabel;
+
+  const year = m.getFullYear();
+  const month = m.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  // Monday start
+  let startOffset = (firstDay.getDay() + 6) % 7;
+
+  const grid = $('#date-grid');
+  grid.innerHTML = '';
+  ['M','T','W','T','F','S','S'].forEach(d => {
+    const dow = document.createElement('div');
+    dow.className = 'date-picker-dow';
+    dow.textContent = d;
+    grid.appendChild(dow);
+  });
+
+  // Previous month tail
+  const prevLast = new Date(year, month, 0).getDate();
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'date-picker-day other-month';
+    cell.textContent = prevLast - i;
+    grid.appendChild(cell);
+  }
+
+  // Current month
+  const today = new Date().toISOString().split('T')[0];
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const cell = document.createElement('div');
+    cell.className = 'date-picker-day';
+    cell.textContent = d;
+    const iso = new Date(year, month, d).toISOString().split('T')[0];
+    if (iso === today) cell.classList.add('today');
+    if (iso === state.selectedDate) cell.classList.add('selected');
+    cell.addEventListener('click', () => {
+      state.selectedDate = iso;
+      $('#task-due-date').value = formatDate(iso);
+      $('#task-due-date').dataset.iso = iso;
+      $('#modal-date').textContent = formatDateShort(iso);
+      closeDatePicker();
+    });
+    grid.appendChild(cell);
+  }
+
+  // Next month head
+  const totalCells = grid.children.length - 7;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'date-picker-day other-month';
+    cell.textContent = i;
+    grid.appendChild(cell);
+  }
+}
+
+// ---------- Event Bindings ----------
+function bindEvents() {
+  // Onboarding
+  $('#onboarding-next').addEventListener('click', nextOnboarding);
+  $('#onboarding-skip').addEventListener('click', completeOnboarding);
+  $$('.dot').forEach(d => d.addEventListener('click', () => {
+    state.onboardingStep = parseInt(d.dataset.dot, 10);
+    renderOnboarding();
+  }));
+
+  // Auth navigation
+  $('#goto-signup').addEventListener('click', () => showScreen('signup'));
+  $('#goto-login').addEventListener('click', () => showScreen('login'));
+  $('#login-close').addEventListener('click', () => showScreen('onboarding'));
+  $('#signup-close').addEventListener('click', () => showScreen('login'));
+
+  // Auth submit
+  $('#login-submit').addEventListener('click', handleLogin);
+  $('#signup-submit').addEventListener('click', handleSignup);
+  $('#login-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  $('#signup-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+
+  // Dashboard
+  $('#logout-btn').addEventListener('click', handleLogout);
+  $('#fab-add').addEventListener('click', () => openTaskModal(null));
+
+  // Filter chips
+  $$('.chip').forEach(c => c.addEventListener('click', () => {
+    state.filter = c.dataset.filter;
+    $$('.chip').forEach(ch => ch.classList.toggle('active', ch === c));
+    renderTasks();
+  }));
+
+  // Task modal
+  $('#task-modal-close').addEventListener('click', closeTaskModal);
+  $('#task-form').addEventListener('submit', saveTask);
+  $('#task-delete-btn').addEventListener('click', deleteTask);
+  $('#task-modal').addEventListener('click', (e) => {
+    if (e.target === $('#task-modal')) closeTaskModal();
+  });
+
+  // Date picker
+  $('#task-due-date').addEventListener('click', openDatePicker);
+  $('#date-close').addEventListener('click', closeDatePicker);
+  $('#date-back').addEventListener('click', closeDatePicker);
+  $('#date-prev').addEventListener('click', () => {
+    state.datePickerMonth.setMonth(state.datePickerMonth.getMonth() - 1);
+    renderDatePicker();
+  });
+  $('#date-next').addEventListener('click', () => {
+    state.datePickerMonth.setMonth(state.datePickerMonth.getMonth() + 1);
+    renderDatePicker();
+  });
+  $('#date-picker-modal').addEventListener('click', (e) => {
+    if (e.target === $('#date-picker-modal')) closeDatePicker();
+  });
+}
+
+// ---------- Boot ----------
+init();
+
+</script>
+</body>
+</html>
